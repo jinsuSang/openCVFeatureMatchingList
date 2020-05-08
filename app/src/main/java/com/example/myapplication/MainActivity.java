@@ -12,16 +12,16 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.media.Image;
+
 import android.net.Uri;
-import android.nfc.Tag;
+
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
-import android.widget.TextView;
+
 
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
@@ -31,18 +31,19 @@ import org.opencv.core.MatOfByte;
 import org.opencv.core.MatOfDMatch;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.Scalar;
-import org.opencv.features2d.BOWImgDescriptorExtractor;
+import org.opencv.features2d.AKAZE;
+import org.opencv.features2d.BFMatcher;
+import org.opencv.features2d.BRISK;
 import org.opencv.features2d.DescriptorMatcher;
-import org.opencv.features2d.FastFeatureDetector;
-import org.opencv.features2d.Feature2D;
 import org.opencv.features2d.Features2d;
+import org.opencv.features2d.FlannBasedMatcher;
+import org.opencv.features2d.KAZE;
 import org.opencv.features2d.ORB;
-import org.opencv.imgproc.Imgproc;
-
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.opencv.features2d.Features2d.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS;
+import javax.crypto.spec.DESKeySpec;
+
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "OcvTest1";
@@ -166,15 +167,32 @@ public class MainActivity extends AppCompatActivity {
         Utils.bitmapToMat(bitmap2, src2);
         MatOfKeyPoint keyPoint1 = new MatOfKeyPoint();
         MatOfKeyPoint keyPoint2 = new MatOfKeyPoint();
-        ORB detector1 = ORB.create();
-        ORB detector2 = ORB.create();
+
+        // ORB detector
+        // ORB detector1 = ORB.create();
+        // ORB detector2 = ORB.create();
+
+        // KAZE detector
+        //KAZE detector1 = KAZE.create();
+        //KAZE detector2 = KAZE.create();
+
+        // AKAZE detector
+        // AKAZE detector1 = AKAZE.create();
+        // AKAZE detector2 = AKAZE.create();
+
+        // BRISK detector
+         BRISK detector1 = BRISK.create();
+         BRISK detector2 = BRISK.create();
 
         Mat descriptor1 = new Mat();
         Mat descriptor2 = new Mat();
         detector1.detectAndCompute(src1, new Mat(), keyPoint1, descriptor1);
         detector2.detectAndCompute(src2, new Mat(), keyPoint2, descriptor2);
 
-        DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMINGLUT);
+        DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE);
+        // BFMatcher matcher = BFMatcher.create();
+        // FlannBasedMatcher matcher = FlannBasedMatcher.create();
+
         MatOfDMatch matches = new MatOfDMatch();
         MatOfDMatch filteredMatches = new MatOfDMatch();
         matcher.match(descriptor1, descriptor2, matches);
