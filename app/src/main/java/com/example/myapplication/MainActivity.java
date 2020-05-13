@@ -69,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        // permission 확인
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
             if(!hasPermissions(PERMISSIONS)){
                 requestPermissions(PERMISSIONS, PERMISSIONS_REQUEST_CODE);
@@ -79,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
         imageView1 = (ImageView)findViewById(R.id.imageView);
     }
 
+    // destory할 때 bitmap recycle
     @Override
     protected void onDestroy() {
         bitmap1.recycle();
@@ -118,6 +119,8 @@ public class MainActivity extends AppCompatActivity {
                     options.inSampleSize = 4;
                     bitmap1 = BitmapFactory.decodeFile(path1, options);
                     bitmap2 = BitmapFactory.decodeFile(path2, options);
+
+                    // detectEdge가 피처매칭 부분
                     if (bitmap1 != null) {
                         detectEdge();
                         imageView1.setImageBitmap(bitmap3);
@@ -168,30 +171,36 @@ public class MainActivity extends AppCompatActivity {
         MatOfKeyPoint keyPoint1 = new MatOfKeyPoint();
         MatOfKeyPoint keyPoint2 = new MatOfKeyPoint();
 
-        // ORB detector
-        // ORB detector1 = ORB.create();
-        // ORB detector2 = ORB.create();
+        // detector 모음
+
+////         ORB detector
+//         ORB detector1 = ORB.create();
+//         ORB detector2 = ORB.create();
 
         // KAZE detector
-        //KAZE detector1 = KAZE.create();
-        //KAZE detector2 = KAZE.create();
+//        KAZE detector1 = KAZE.create();
+//        KAZE detector2 = KAZE.create();
 
         // AKAZE detector
-        // AKAZE detector1 = AKAZE.create();
-        // AKAZE detector2 = AKAZE.create();
 
+//        AKAZE detector1 = AKAZE.create();
+//        AKAZE detector2 = AKAZE.create();
         // BRISK detector
          BRISK detector1 = BRISK.create();
          BRISK detector2 = BRISK.create();
 
         Mat descriptor1 = new Mat();
         Mat descriptor2 = new Mat();
+
+        // keypoint와 description 생성
         detector1.detectAndCompute(src1, new Mat(), keyPoint1, descriptor1);
         detector2.detectAndCompute(src2, new Mat(), keyPoint2, descriptor2);
 
-        DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE);
-        // BFMatcher matcher = BFMatcher.create();
-        // FlannBasedMatcher matcher = FlannBasedMatcher.create();
+        // Matcher 종류 선택
+
+        DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
+//         BFMatcher matcher = BFMatcher.create();
+//         FlannBasedMatcher matcher = FlannBasedMatcher.create();
 
         MatOfDMatch matches = new MatOfDMatch();
         MatOfDMatch filteredMatches = new MatOfDMatch();
@@ -201,6 +210,8 @@ public class MainActivity extends AppCompatActivity {
         Double max_dist = 0.0;
         Double min_dist = 100.0;
 
+
+        // 최소 최대 거리 확인
         for(int i = 0;i < matchesList.size(); i++){
             Double dist = (double) matchesList.get(i).distance;
             if (dist < min_dist)
@@ -211,21 +222,30 @@ public class MainActivity extends AppCompatActivity {
 
         LinkedList<DMatch> good_matches = new LinkedList<DMatch>();
         for(int i = 0;i < matchesList.size(); i++){
-            if (matchesList.get(i).distance <= (1.5 * min_dist))
+            // 중요!!
+            // 얼마나 유사한 피처를 매칭시킬건지 설정
+            // 숫자가 높을수록 피처간 정확도 상승 매칭 개수 감소, 낮을수록 피처간 정확도 감소 매칭 개수 상승
+            if (matchesList.get(i).distance <= (3 * min_dist))
                 good_matches.addLast(matchesList.get(i));
         }
 
         MatOfDMatch goodMatches = new MatOfDMatch();
         goodMatches.fromList(good_matches);
 
-        Log.d("asdfjkl",matches.size() + " " + goodMatches.size());
 
+        // 피처는 레드, 선은 그린
         Scalar RED = new Scalar(255,0,0);
         Scalar GREEN = new Scalar(0,255,0);
 
         Mat edge = new Mat();
         MatOfByte drawnMatches = new MatOfByte();
+
+        // 두 이미지간 피처 매칭 그리기
         Features2d.drawMatches(src1, keyPoint1, src2, keyPoint2, goodMatches, edge, GREEN, RED, drawnMatches, Features2d.DrawMatchesFlags_DRAW_RICH_KEYPOINTS);
+
+        // 이미지별 키 포인트 개수와 매칭된 포인트 개수
+        Log.d("RESULT", "keypoint1: " + keyPoint1.size() +", keypoint2: " + keyPoint2.size());
+        Log.d("RESULT", "matches: " + good_matches.size());
 
         Utils.matToBitmap(src1, bitmap1);
         Utils.matToBitmap(src2, bitmap2);
