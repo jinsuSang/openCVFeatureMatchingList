@@ -14,7 +14,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
 import android.net.Uri;
-
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -172,10 +171,9 @@ public class MainActivity extends AppCompatActivity {
         MatOfKeyPoint keyPoint2 = new MatOfKeyPoint();
 
         // detector 모음
-
 ////         ORB detector
-//         ORB detector1 = ORB.create();
-//         ORB detector2 = ORB.create();
+         ORB detector1 = ORB.create();
+         ORB detector2 = ORB.create();
 
         // KAZE detector
 //        KAZE detector1 = KAZE.create();
@@ -186,8 +184,8 @@ public class MainActivity extends AppCompatActivity {
 //        AKAZE detector1 = AKAZE.create();
 //        AKAZE detector2 = AKAZE.create();
         // BRISK detector
-         BRISK detector1 = BRISK.create();
-         BRISK detector2 = BRISK.create();
+//         BRISK detector1 = BRISK.create();
+//         BRISK detector2 = BRISK.create();
 
         Mat descriptor1 = new Mat();
         Mat descriptor2 = new Mat();
@@ -241,7 +239,8 @@ public class MainActivity extends AppCompatActivity {
         MatOfByte drawnMatches = new MatOfByte();
 
         // 두 이미지간 피처 매칭 그리기
-        Features2d.drawMatches(src1, keyPoint1, src2, keyPoint2, goodMatches, edge, GREEN, RED, drawnMatches, Features2d.DrawMatchesFlags_DRAW_RICH_KEYPOINTS);
+        // Features2d.drawMatches(src1, keyPoint1, src2, keyPoint2, goodMatches, edge, GREEN, RED, drawnMatches, Features2d.DrawMatchesFlags_DRAW_RICH_KEYPOINTS);
+        Features2d.drawMatches(src1, keyPoint1, src2, keyPoint2, goodMatches, edge, GREEN, RED, drawnMatches, Features2d.DrawMatchesFlags_DEFAULT);
 
         // 이미지별 키 포인트 개수와 매칭된 포인트 개수
         Log.d("RESULT", "keypoint1: " + keyPoint1.size() +", keypoint2: " + keyPoint2.size());
