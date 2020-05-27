@@ -6,12 +6,6 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <ImageView
-        android:id="@+id/imageView"
-        android:layout_width="match_parent"
-        android:layout_height="600dp"
-        tools:srcCompat="@tools:sample/avatars" />
-
     <Button
         android:id="@+id/button"
         android:layout_width="match_parent"
@@ -19,6 +13,11 @@
         android:layout_alignParentBottom="true"
         android:onClick="onButton1Clicked"
         android:text="Button" />
+
+    <ListView
+        android:id="@+id/listView"
+        android:layout_width="match_parent"
+        android:layout_height="666dp" />
 
 
 </RelativeLayout>

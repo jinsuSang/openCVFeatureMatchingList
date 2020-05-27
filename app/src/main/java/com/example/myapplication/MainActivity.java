@@ -20,6 +20,7 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.ListView;
 
 
 import org.opencv.android.OpenCVLoader;
@@ -30,18 +31,13 @@ import org.opencv.core.MatOfByte;
 import org.opencv.core.MatOfDMatch;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.Scalar;
-import org.opencv.features2d.AKAZE;
-import org.opencv.features2d.BFMatcher;
-import org.opencv.features2d.BRISK;
 import org.opencv.features2d.DescriptorMatcher;
 import org.opencv.features2d.Features2d;
-import org.opencv.features2d.FlannBasedMatcher;
-import org.opencv.features2d.KAZE;
 import org.opencv.features2d.ORB;
+
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-
-import javax.crypto.spec.DESKeySpec;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -59,10 +55,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private ImageView imageView1;
-    private Bitmap bitmap1;
-    private Bitmap bitmap2;
-    private Bitmap bitmap3;
+    private ArrayList<Bitmap> bitmapArrayList = new ArrayList<>();
+    private ArrayList<ListComparedItem> comparedBitmapArrayList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,20 +69,13 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        imageView1 = (ImageView)findViewById(R.id.imageView);
     }
 
     // destory할 때 bitmap recycle
     @Override
     protected void onDestroy() {
-        bitmap1.recycle();
-        bitmap1 = null;
-
-        bitmap2.recycle();
-        bitmap2 = null;
-
-        bitmap3.recycle();
-        bitmap3 = null;
+        bitmapArrayList.clear();
+        comparedBitmapArrayList.clear();
         super.onDestroy();
     }
 
@@ -108,21 +95,23 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == REQ_CODE_SELECT_IMAGE) {
             if (resultCode == Activity.RESULT_OK) {
                 try {
-                    imageView1.setImageResource(0);
-
                     ClipData clipData = data.getClipData();
 
-                    String path1 = getImagePathFromURI(clipData.getItemAt(0).getUri());
-                    String path2 = getImagePathFromURI(clipData.getItemAt(1).getUri());
+                    ArrayList<String> pathArrayList = new ArrayList<>();
+                    for (int i = 0; i < clipData.getItemCount(); i++){
+                        String path = getImagePathFromURI(clipData.getItemAt(i).getUri());
+                        pathArrayList.add(path);
+                    }
+
                     BitmapFactory.Options options = new BitmapFactory.Options();
                     options.inSampleSize = 4;
-                    bitmap1 = BitmapFactory.decodeFile(path1, options);
-                    bitmap2 = BitmapFactory.decodeFile(path2, options);
+                    for (int i = 0; i< pathArrayList.size(); i++){
+                        bitmapArrayList.add(BitmapFactory.decodeFile(pathArrayList.get(i), options));
+                    }
 
                     // detectEdge가 피처매칭 부분
-                    if (bitmap1 != null) {
+                    if (bitmapArrayList != null) {
                         detectEdge();
-                        imageView1.setImageBitmap(bitmap3);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -163,17 +152,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void detectEdge(){
-        Mat src1 = new Mat();
-        Mat src2 = new Mat();
-        Utils.bitmapToMat(bitmap1, src1);
-        Utils.bitmapToMat(bitmap2, src2);
-        MatOfKeyPoint keyPoint1 = new MatOfKeyPoint();
-        MatOfKeyPoint keyPoint2 = new MatOfKeyPoint();
+
+        ArrayList<Mat> matArrayList = new ArrayList<>();
+
+        for(int i = 0; i < bitmapArrayList.size(); i++){
+            Mat mat = new Mat();
+            Utils.bitmapToMat(bitmapArrayList.get(i), mat);
+            matArrayList.add(mat);
+        }
 
         // detector 모음
 ////         ORB detector
          ORB detector1 = ORB.create();
-         ORB detector2 = ORB.create();
+         //ORB detector2 = ORB.create();
 
         // KAZE detector
 //        KAZE detector1 = KAZE.create();
@@ -187,12 +178,19 @@ public class MainActivity extends AppCompatActivity {
 //         BRISK detector1 = BRISK.create();
 //         BRISK detector2 = BRISK.create();
 
-        Mat descriptor1 = new Mat();
-        Mat descriptor2 = new Mat();
 
         // keypoint와 description 생성
-        detector1.detectAndCompute(src1, new Mat(), keyPoint1, descriptor1);
-        detector2.detectAndCompute(src2, new Mat(), keyPoint2, descriptor2);
+        ArrayList<MatOfKeyPoint> keyPointArrayList = new ArrayList<>();
+        ArrayList<Mat> desriptorMatArrayList = new ArrayList<>();
+
+        for (int i = 0; i < matArrayList.size(); i++){
+            MatOfKeyPoint keyPoint = new MatOfKeyPoint();
+            Mat descriptor = new Mat();
+            detector1.detectAndCompute(matArrayList.get(i), new Mat(), keyPoint, descriptor);
+
+            keyPointArrayList.add(keyPoint);
+            desriptorMatArrayList.add(descriptor);
+        }
 
         // Matcher 종류 선택
 
@@ -200,61 +198,68 @@ public class MainActivity extends AppCompatActivity {
 //         BFMatcher matcher = BFMatcher.create();
 //         FlannBasedMatcher matcher = FlannBasedMatcher.create();
 
-        MatOfDMatch matches = new MatOfDMatch();
-        MatOfDMatch filteredMatches = new MatOfDMatch();
-        matcher.match(descriptor1, descriptor2, matches);
+        for (int i = 1; i< matArrayList.size(); i++) {
+            Mat mainDescriptor = desriptorMatArrayList.get(0);
+            Mat subDescriptor = desriptorMatArrayList.get(i);
+            MatOfDMatch matches = new MatOfDMatch();
+            matcher.match(mainDescriptor, subDescriptor, matches);
 
-        List<DMatch> matchesList = matches.toList();
-        Double max_dist = 0.0;
-        Double min_dist = 100.0;
+            List<DMatch> matchesList = matches.toList();
+            Double max_dist = 0.0;
+            Double min_dist = 100.0;
 
 
-        // 최소 최대 거리 확인
-        for(int i = 0;i < matchesList.size(); i++){
-            Double dist = (double) matchesList.get(i).distance;
-            if (dist < min_dist)
-                min_dist = dist;
-            if ( dist > max_dist)
-                max_dist = dist;
+            // 최소 최대 거리 확인
+            for (int j = 0; j < matchesList.size(); j++) {
+                Double dist = (double) matchesList.get(j).distance;
+                if (dist < min_dist)
+                    min_dist = dist;
+                if (dist > max_dist)
+                    max_dist = dist;
+            }
+
+            LinkedList<DMatch> good_matches = new LinkedList<DMatch>();
+            for (int j = 0; j < matchesList.size(); j++) {
+                // 중요!!
+                // 얼마나 유사한 피처를 매칭시킬건지 설정
+                // 숫자가 높을수록 피처간 정확도 상승 매칭 개수 감소, 낮을수록 피처간 정확도 감소 매칭 개수 상승
+                if (matchesList.get(j).distance <= (3 * min_dist))
+                    good_matches.addLast(matchesList.get(j));
+            }
+
+            MatOfDMatch goodMatches = new MatOfDMatch();
+            goodMatches.fromList(good_matches);
+
+
+            // 피처는 레드, 선은 그린
+            Scalar RED = new Scalar(255, 0, 0);
+            Scalar GREEN = new Scalar(0, 255, 0);
+
+            Mat edge = new Mat();
+            MatOfByte drawnMatches = new MatOfByte();
+
+            // 두 이미지간 피처 매칭 그리기
+            Features2d.drawMatches(matArrayList.get(0), keyPointArrayList.get(0), matArrayList.get(i), keyPointArrayList.get(i), goodMatches, edge, GREEN, RED, drawnMatches, Features2d.DrawMatchesFlags_DRAW_RICH_KEYPOINTS);
+//        Features2d.drawMatches(src1, keyPoint1, src2, keyPoint2, goodMatches, edge, GREEN, RED, drawnMatches, Features2d.DrawMatchesFlags_DEFAULT);
+
+            // 이미지별 키 포인트 개수와 매칭된 포인트 개수
+            Bitmap bitmap = Bitmap.createBitmap(edge.cols(), edge.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(edge, bitmap);
+
+            comparedBitmapArrayList.add(new ListComparedItem(bitmap, keyPointArrayList.get(0).toArray().length, keyPointArrayList.get(i).toArray().length, good_matches.size()));
+
+            edge.release();
         }
+        ListView listView;
+        ListViewAdapter adapter;
 
-        LinkedList<DMatch> good_matches = new LinkedList<DMatch>();
-        for(int i = 0;i < matchesList.size(); i++){
-            // 중요!!
-            // 얼마나 유사한 피처를 매칭시킬건지 설정
-            // 숫자가 높을수록 피처간 정확도 상승 매칭 개수 감소, 낮을수록 피처간 정확도 감소 매칭 개수 상승
-            if (matchesList.get(i).distance <= (3 * min_dist))
-                good_matches.addLast(matchesList.get(i));
-        }
+        adapter = new ListViewAdapter(comparedBitmapArrayList);
 
-        MatOfDMatch goodMatches = new MatOfDMatch();
-        goodMatches.fromList(good_matches);
+        listView = (ListView)findViewById(R.id.listView);
+        listView.setAdapter(adapter);
 
-
-        // 피처는 레드, 선은 그린
-        Scalar RED = new Scalar(255,0,0);
-        Scalar GREEN = new Scalar(0,255,0);
-
-        Mat edge = new Mat();
-        MatOfByte drawnMatches = new MatOfByte();
-
-        // 두 이미지간 피처 매칭 그리기
-        // Features2d.drawMatches(src1, keyPoint1, src2, keyPoint2, goodMatches, edge, GREEN, RED, drawnMatches, Features2d.DrawMatchesFlags_DRAW_RICH_KEYPOINTS);
-        Features2d.drawMatches(src1, keyPoint1, src2, keyPoint2, goodMatches, edge, GREEN, RED, drawnMatches, Features2d.DrawMatchesFlags_DEFAULT);
-
-        // 이미지별 키 포인트 개수와 매칭된 포인트 개수
-        Log.d("RESULT", "keypoint1: " + keyPoint1.size() +", keypoint2: " + keyPoint2.size());
-        Log.d("RESULT", "matches: " + good_matches.size());
-
-        Utils.matToBitmap(src1, bitmap1);
-        Utils.matToBitmap(src2, bitmap2);
-
-        bitmap3 = Bitmap.createBitmap(edge.cols(), edge.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(edge, bitmap3);
-
-        src2.release();
-        src1.release();
-        edge.release();
+        comparedBitmapArrayList.clear();
+        bitmapArrayList.clear();
     }
 
     /**
