@@ -25,15 +25,20 @@ import android.widget.ListView;
 
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.DMatch;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.core.MatOfDMatch;
+import org.opencv.core.MatOfFloat;
+import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.Scalar;
 import org.opencv.features2d.DescriptorMatcher;
 import org.opencv.features2d.Features2d;
 import org.opencv.features2d.ORB;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -223,7 +228,7 @@ public class MainActivity extends AppCompatActivity {
                 // 중요!!
                 // 얼마나 유사한 피처를 매칭시킬건지 설정
                 // 숫자가 높을수록 피처간 정확도 상승 매칭 개수 감소, 낮을수록 피처간 정확도 감소 매칭 개수 상승
-                if (matchesList.get(j).distance <= (3 * min_dist))
+                if (matchesList.get(j).distance >= (2.3 * min_dist))
                     good_matches.addLast(matchesList.get(j));
             }
 
@@ -239,16 +244,67 @@ public class MainActivity extends AppCompatActivity {
             MatOfByte drawnMatches = new MatOfByte();
 
             // 두 이미지간 피처 매칭 그리기
-            Features2d.drawMatches(matArrayList.get(0), keyPointArrayList.get(0), matArrayList.get(i), keyPointArrayList.get(i), goodMatches, edge, GREEN, RED, drawnMatches, Features2d.DrawMatchesFlags_DRAW_RICH_KEYPOINTS);
+            Features2d.drawMatches(matArrayList.get(0), keyPointArrayList.get(0), matArrayList.get(i), keyPointArrayList.get(i), goodMatches, edge, GREEN, RED, drawnMatches, Features2d.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS);
 //        Features2d.drawMatches(src1, keyPoint1, src2, keyPoint2, goodMatches, edge, GREEN, RED, drawnMatches, Features2d.DrawMatchesFlags_DEFAULT);
 
             // 이미지별 키 포인트 개수와 매칭된 포인트 개수
             Bitmap bitmap = Bitmap.createBitmap(edge.cols(), edge.rows(), Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(edge, bitmap);
 
-            comparedBitmapArrayList.add(new ListComparedItem(bitmap, keyPointArrayList.get(0).toArray().length, keyPointArrayList.get(i).toArray().length, good_matches.size()));
-
             edge.release();
+
+            // histogram matching
+            Mat hsvImg1 = new Mat();
+            Mat hsvImg2 = new Mat();
+
+            Imgproc.cvtColor(matArrayList.get(0), hsvImg1, Imgcodecs.IMREAD_ANYCOLOR);
+            Imgproc.cvtColor(matArrayList.get(i), hsvImg2, Imgcodecs.IMREAD_ANYCOLOR);
+
+            List<Mat> matList1 = new ArrayList<Mat>();
+            List<Mat> matList2 = new ArrayList<Mat>();
+
+            matList1.add(hsvImg1);
+            matList2.add(hsvImg2);
+
+            MatOfFloat range = new MatOfFloat(0,255);
+            MatOfInt histSize = new MatOfInt(50);
+            MatOfInt channels = new MatOfInt(0);
+
+            Mat histogram1 = new Mat();
+            Mat histogram2 = new Mat();
+
+            Imgproc.calcHist(matList1, channels, new Mat(), histogram1, histSize, range);
+            Imgproc.calcHist(matList2, channels, new Mat(), histogram2, histSize, range);
+
+            Core.normalize(histogram1, histogram1, 0, 1, Core.NORM_MINMAX, -1, new Mat());
+            Core.normalize(histogram2, histogram2, 0, 1, Core.NORM_MINMAX, -1, new Mat());
+
+            /*
+            * correlation: the higher the metric, the more accurate the match ">0.9"
+            * chi_square: the lower the metric, the more accurate the match "<0.1"
+            * intersection: the higher the metric, the more accurate the match ">1.5"
+            * bhattacharyya: the lower the metric, the more accurate the match "<0.3"
+            * */
+
+            double correlation, chi_square, intersection, bhattacharyya;
+            correlation = Imgproc.compareHist(histogram1, histogram2, 0);
+            chi_square = Imgproc.compareHist(histogram1, histogram2, 1);
+            intersection = Imgproc.compareHist(histogram1, histogram2, 2);
+            bhattacharyya = Imgproc.compareHist(histogram1, histogram2, 3);
+
+            int count = 0;
+            boolean result = false;
+
+            if(correlation > 0.9) count++;
+            if(chi_square < 0.1) count++;
+            if(intersection > 1.5) count++;
+            if(bhattacharyya < 0.3) count++;
+
+            if(count >= 3) result = true;
+
+            comparedBitmapArrayList.add(new ListComparedItem(bitmap, keyPointArrayList.get(0).toArray().length,
+                    keyPointArrayList.get(i).toArray().length, good_matches.size(),
+                    correlation, chi_square, intersection, bhattacharyya, result));
         }
         ListView listView;
         ListViewAdapter adapter;
