@@ -4,8 +4,9 @@ import android.graphics.Bitmap;
 
 public class ListComparedItem {
     private Bitmap comparedBmp;
-    private int keypoint1;
-    private int keypoint2;
+    private double min_length;
+    private double max_length;
+    private int number;
     private int good_matches;
     private double correlation;
     private double chi_square;
@@ -13,12 +14,13 @@ public class ListComparedItem {
     private double bhattacharyya;
     private boolean histogramResult;
 
-    public ListComparedItem(Bitmap comparedBmp, int keypoint1, int keypoint2, int good_matches,
+    public ListComparedItem(Bitmap comparedBmp, double min_length, double max_length, int number, int good_matches,
                             double correlation, double chi_square, double intersection, double bhattacharyya,
                             boolean histogramResult) {
         this.comparedBmp = comparedBmp;
-        this.keypoint1 = keypoint1;
-        this.keypoint2 = keypoint2;
+        this.min_length = min_length;
+        this.max_length = max_length;
+        this.number = number;
         this.good_matches = good_matches;
         this.correlation = correlation;
         this.chi_square = chi_square;
@@ -35,13 +37,11 @@ public class ListComparedItem {
         return good_matches;
     }
 
-    public long getKeypoint1() {
-        return keypoint1;
-    }
+    public double getMin_length(){return min_length;}
 
-    public long getKeypoint2() {
-        return keypoint2;
-    }
+    public double getMax_length(){return max_length;}
+
+    public int getNumber(){return number;}
 
     public double getCorrelation(){return correlation;}
 

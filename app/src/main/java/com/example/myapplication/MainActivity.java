@@ -34,8 +34,11 @@ import org.opencv.core.MatOfFloat;
 import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.Scalar;
+import org.opencv.features2d.AKAZE;
+import org.opencv.features2d.BRISK;
 import org.opencv.features2d.DescriptorMatcher;
 import org.opencv.features2d.Features2d;
+import org.opencv.features2d.KAZE;
 import org.opencv.features2d.ORB;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
@@ -172,15 +175,15 @@ public class MainActivity extends AppCompatActivity {
          //ORB detector2 = ORB.create();
 
         // KAZE detector
-//        KAZE detector1 = KAZE.create();
+        //KAZE detector1 = KAZE.create();
 //        KAZE detector2 = KAZE.create();
 
         // AKAZE detector
 
-//        AKAZE detector1 = AKAZE.create();
+        //AKAZE detector1 = AKAZE.create();
 //        AKAZE detector2 = AKAZE.create();
         // BRISK detector
-//         BRISK detector1 = BRISK.create();
+         //BRISK detector1 = BRISK.create();
 //         BRISK detector2 = BRISK.create();
 
 
@@ -199,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Matcher 종류 선택
 
-        DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
+        DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMINGLUT);
 //         BFMatcher matcher = BFMatcher.create();
 //         FlannBasedMatcher matcher = FlannBasedMatcher.create();
 
@@ -228,7 +231,7 @@ public class MainActivity extends AppCompatActivity {
                 // 중요!!
                 // 얼마나 유사한 피처를 매칭시킬건지 설정
                 // 숫자가 높을수록 피처간 정확도 상승 매칭 개수 감소, 낮을수록 피처간 정확도 감소 매칭 개수 상승
-                if (matchesList.get(j).distance >= (2.3 * min_dist))
+                if (matchesList.get(j).distance <= 40)
                     good_matches.addLast(matchesList.get(j));
             }
 
@@ -302,8 +305,8 @@ public class MainActivity extends AppCompatActivity {
 
             if(count >= 3) result = true;
 
-            comparedBitmapArrayList.add(new ListComparedItem(bitmap, keyPointArrayList.get(0).toArray().length,
-                    keyPointArrayList.get(i).toArray().length, good_matches.size(),
+            comparedBitmapArrayList.add(new ListComparedItem(bitmap, min_dist,
+                    max_dist, i, good_matches.size(),
                     correlation, chi_square, intersection, bhattacharyya, result));
         }
         ListView listView;

@@ -54,13 +54,22 @@ public class ListViewAdapter extends BaseAdapter {
 
         ListComparedItem listComparedItem = comparePhotoList.get(position);
        imageView.setImageBitmap(listComparedItem.getComparedBmp());
-       textView1.setText("keypoint1: " + listComparedItem.getKeypoint1() + ", keypoint2: " + listComparedItem.getKeypoint2());
-       textView2.setText("matches: " + listComparedItem.getGood_matches());
+       textView1.setText("min: " + listComparedItem.getMin_length() + ", max: " + listComparedItem.getMax_length());
+       textView2.setText("matches: " + listComparedItem.getGood_matches() + ", num: " + listComparedItem.getNumber());
        textView3.setText("correlation: " + listComparedItem.getCorrelation());
        textView4.setText("chi-square: "+ listComparedItem.getChi_square());
        textView5.setText("intersection: " + listComparedItem.getIntersection());
        textView6.setText("bhattacharyya: " + listComparedItem.getBhattacharyya());
-       textView7.setText("histResult: " + listComparedItem.isHistogramResult());
+
+       boolean finalResult = true;
+       if(listComparedItem.getGood_matches() <= 20){
+           finalResult = false;
+       }
+       if(listComparedItem.isHistogramResult() == true){
+           finalResult = true;
+       }
+       textView7.setText("histResult: " + listComparedItem.isHistogramResult() + "finalResult: " + finalResult);
+
 
 
 
